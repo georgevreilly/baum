@@ -29,18 +29,22 @@ pub enum FileTree {
     Symlink(Symlink),
 }
 
-pub fn walk(root: &PathBuf) -> io::Result<Directory> {
+pub fn is_not_hidden(name: &str) -> bool {
+    return !name.starts_with('.')
+}
+
+pub fn walk(root: &PathBuf, filter: fn(name: &str)-> bool) -> io::Result<Directory> {
     let entries: Vec<fs::DirEntry> = fs::read_dir(root)?.map(|e| e.unwrap()).collect();
     let mut directory: Vec<FileTree> = Vec::with_capacity(entries.len());
     for e in entries {
         let path = e.path();
         let name: String = path.file_name().unwrap().to_str().unwrap().into();
-        if name.starts_with(".") {
+        if !filter(&name) {
             continue;
         };
         let metadata = fs::metadata(&path).unwrap();
         let entry = match path {
-            path if path.is_dir() => FileTree::Dir(walk(&root.join(name))?),
+            path if path.is_dir() => FileTree::Dir(walk(&root.join(name), filter)?),
             path if path.is_symlink() => FileTree::Symlink(Symlink {
                 name: name.into(),
                 target: fs::read_link(path).unwrap().to_string_lossy().to_string(),
