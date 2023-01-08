@@ -40,19 +40,20 @@ fn walk(root: &PathBuf, prefix: &str) -> io::Result<FileTree> {
         };
         // println!("{}├── {}", prefix, name);
         let metadata = fs::metadata(&path).unwrap();
-        let e2 = match path {
+        let fte = match path {
             path if path.is_dir() => walk(&root.join(name), &format!("{}├  ", prefix))?,
             path if path.is_symlink() => FileTree::Symlink(SymlinkEntry {
                 name: name.into(),
                 target: fs::read_link(path).unwrap().to_string_lossy().to_string(),
                 metadata: metadata,
             }),
-            _ => FileTree::File(FileEntry {
+            path if path.is_file() => FileTree::File(FileEntry {
                 name: name.into(),
                 metadata: metadata,
             }),
+            _ => unreachable!(),
         };
-        directory.push(e2);
+        directory.push(fte);
     }
     let name = root
         .file_name()
