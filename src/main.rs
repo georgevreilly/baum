@@ -4,7 +4,7 @@ use filetree::*;
 use std::io;
 
 fn print_tree(dir: Directory) {
-    const OTHER_CHILD: &str = "│   ";
+    const OTHER_CHILD: &str = "│   ";
     const OTHER_ENTRY: &str = "├── ";
     const FINAL_CHILD: &str = "    ";
     const FINAL_ENTRY: &str = "└── ";
