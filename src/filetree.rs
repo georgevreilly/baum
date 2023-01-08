@@ -4,19 +4,19 @@ use std::io;
 use std::path::PathBuf;
 
 #[derive(Debug)]
-pub struct DirEntry {
+pub struct Directory {
     name: String,
     entries: Vec<FileTree>,
 }
 
 #[derive(Debug)]
-pub struct FileEntry {
+pub struct File {
     name: String,
     metadata: fs::Metadata,
 }
 
 #[derive(Debug)]
-pub struct SymlinkEntry {
+pub struct Symlink {
     name: String,
     target: String,
     metadata: fs::Metadata,
@@ -24,12 +24,12 @@ pub struct SymlinkEntry {
 
 #[derive(Debug)]
 pub enum FileTree {
-    Directory(DirEntry),
-    File(FileEntry),
-    Symlink(SymlinkEntry),
+    Dir(Directory),
+    File(File),
+    Symlink(Symlink),
 }
 
-pub fn walk(root: &PathBuf, prefix: &str) -> io::Result<FileTree> {
+pub fn walk(root: &PathBuf) -> io::Result<Directory> {
     let entries: Vec<fs::DirEntry> = fs::read_dir(root)?.map(|e| e.unwrap()).collect();
     let mut directory: Vec<FileTree> = Vec::with_capacity(entries.len());
     for e in entries {
@@ -38,22 +38,21 @@ pub fn walk(root: &PathBuf, prefix: &str) -> io::Result<FileTree> {
         if name.starts_with(".") {
             continue;
         };
-        // println!("{}├── {}", prefix, name);
         let metadata = fs::metadata(&path).unwrap();
-        let fte = match path {
-            path if path.is_dir() => walk(&root.join(name), &format!("{}├  ", prefix))?,
-            path if path.is_symlink() => FileTree::Symlink(SymlinkEntry {
+        let entry = match path {
+            path if path.is_dir() => FileTree::Dir(walk(&root.join(name))?),
+            path if path.is_symlink() => FileTree::Symlink(Symlink {
                 name: name.into(),
                 target: fs::read_link(path).unwrap().to_string_lossy().to_string(),
                 metadata: metadata,
             }),
-            path if path.is_file() => FileTree::File(FileEntry {
+            path if path.is_file() => FileTree::File(File {
                 name: name.into(),
                 metadata: metadata,
             }),
             _ => unreachable!(),
         };
-        directory.push(fte);
+        directory.push(entry);
     }
     let name = root
         .file_name()
@@ -61,8 +60,8 @@ pub fn walk(root: &PathBuf, prefix: &str) -> io::Result<FileTree> {
         .to_str()
         .unwrap()
         .into();
-    Ok(FileTree::Directory(DirEntry {
+    Ok(Directory {
         name: name,
         entries: directory,
-    }))
+    })
 }
