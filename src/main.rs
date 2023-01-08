@@ -4,32 +4,33 @@ use filetree::*;
 use std::io;
 
 fn print_tree(dir: Directory) {
-    fn visit(node: Directory, level: usize) {
-        let prefix = "│  ".repeat(level);
+    fn visit(node: Directory, prefix: &str) {
         let mut count = node.entries.len();
-        println!("{} {}", prefix, node.name);
         for entry in node.entries {
             count -= 1;
-            let corner = if count == 0 { "└" } else { "├" };
+            let line = if count == 0 {
+                "└── " // final
+            } else {
+                "├── " // intermediate
+            };
             match entry {
                 FileTree::Dir(subdir) => {
-                    // println!("{}{}── {}", prefix, corner, subdir.name);
-                    visit(subdir, level + 1)
+                    println!("{}{}{}", prefix, line, subdir.name);
+                    let s = if count == 0 { " " } else { "│" };
+                    visit(subdir, &format!("{}{}   ", prefix, s))
                 }
                 FileTree::Symlink(symlink) => {
-                    println!(
-                        "{}{}── {} -> {}",
-                        prefix, corner, symlink.name, symlink.target
-                    );
+                    println!("{}{}{} -> {}", prefix, line, symlink.name, symlink.target);
                 }
                 FileTree::File(file) => {
-                    println!("{}{}── {}", prefix, corner, file.name);
+                    println!("{}{}{}", prefix, line, file.name);
                 }
             }
         }
     }
 
-    visit(dir, 0)
+    println!("{}", dir.name);
+    visit(dir, "")
 }
 
 fn main() -> io::Result<()> {
