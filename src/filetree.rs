@@ -5,21 +5,21 @@ use std::path::PathBuf;
 
 #[derive(Debug)]
 pub struct Directory {
-    name: String,
-    entries: Vec<FileTree>,
+    pub name: String,
+    pub entries: Vec<FileTree>,
 }
 
 #[derive(Debug)]
 pub struct File {
-    name: String,
-    metadata: fs::Metadata,
+    pub name: String,
+    pub metadata: fs::Metadata,
 }
 
 #[derive(Debug)]
 pub struct Symlink {
-    name: String,
-    target: String,
-    metadata: fs::Metadata,
+    pub name: String,
+    pub target: String,
+    pub metadata: fs::Metadata,
 }
 
 #[derive(Debug)]
