@@ -7,7 +7,7 @@ use std::path::PathBuf;
 enum Entry {
     Directory((String, Vec<Entry>)),
     File(String), // TODO: metadata
-    Symlink(String),
+    Symlink(String, String),
 }
 
 fn walk(root: &PathBuf, prefix: &str) -> io::Result<Entry> {
@@ -22,7 +22,10 @@ fn walk(root: &PathBuf, prefix: &str) -> io::Result<Entry> {
         // println!("{}├── {}", prefix, name);
         let e2 = match path {
             path if path.is_dir() => walk(&root.join(name), &format!("{}├  ", prefix))?,
-            path if path.is_symlink() => Entry::Symlink(name.into()),
+            path if path.is_symlink() => Entry::Symlink(
+                name.into(),
+                fs::read_link(path).unwrap().to_string_lossy().to_string(),
+            ),
             _ => Entry::File(name.into()),
         };
         directory.push(e2);
