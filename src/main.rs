@@ -6,7 +6,7 @@ use std::path::PathBuf;
 #[derive(Debug)]
 struct DirEntry {
     name: String,
-    entries: Vec<Entry>,
+    entries: Vec<FileTree>,
 }
 
 #[derive(Debug)]
@@ -23,15 +23,15 @@ struct SymlinkEntry {
 }
 
 #[derive(Debug)]
-enum Entry {
+enum FileTree {
     Directory(DirEntry),
     File(FileEntry),
     Symlink(SymlinkEntry),
 }
 
-fn walk(root: &PathBuf, prefix: &str) -> io::Result<Entry> {
+fn walk(root: &PathBuf, prefix: &str) -> io::Result<FileTree> {
     let entries: Vec<fs::DirEntry> = fs::read_dir(root)?.map(|e| e.unwrap()).collect();
-    let mut directory: Vec<Entry> = Vec::with_capacity(entries.len());
+    let mut directory: Vec<FileTree> = Vec::with_capacity(entries.len());
     for e in entries {
         let path = e.path();
         let name: String = path.file_name().unwrap().to_str().unwrap().into();
@@ -42,12 +42,12 @@ fn walk(root: &PathBuf, prefix: &str) -> io::Result<Entry> {
         let metadata = fs::metadata(&path).unwrap();
         let e2 = match path {
             path if path.is_dir() => walk(&root.join(name), &format!("{}├  ", prefix))?,
-            path if path.is_symlink() => Entry::Symlink(SymlinkEntry {
+            path if path.is_symlink() => FileTree::Symlink(SymlinkEntry {
                 name: name.into(),
                 target: fs::read_link(path).unwrap().to_string_lossy().to_string(),
                 metadata: metadata,
             }),
-            _ => Entry::File(FileEntry {
+            _ => FileTree::File(FileEntry {
                 name: name.into(),
                 metadata: metadata,
             }),
@@ -60,7 +60,7 @@ fn walk(root: &PathBuf, prefix: &str) -> io::Result<Entry> {
         .to_str()
         .unwrap()
         .into();
-    Ok(Entry::Directory(DirEntry {
+    Ok(FileTree::Directory(DirEntry {
         name: name,
         entries: directory,
     }))
