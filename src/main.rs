@@ -4,10 +4,29 @@ use std::io;
 use std::path::PathBuf;
 
 #[derive(Debug)]
+struct DirEntry {
+    name: String,
+    entries: Vec<Entry>,
+}
+
+#[derive(Debug)]
+struct FileEntry {
+    name: String,
+    metadata: fs::Metadata,
+}
+
+#[derive(Debug)]
+struct SymlinkEntry {
+    name: String,
+    target: String,
+    metadata: fs::Metadata,
+}
+
+#[derive(Debug)]
 enum Entry {
-    Directory((String, Vec<Entry>)),
-    File(String), // TODO: metadata
-    Symlink(String, String),
+    Directory(DirEntry),
+    File(FileEntry),
+    Symlink(SymlinkEntry),
 }
 
 fn walk(root: &PathBuf, prefix: &str) -> io::Result<Entry> {
@@ -20,13 +39,18 @@ fn walk(root: &PathBuf, prefix: &str) -> io::Result<Entry> {
             continue;
         };
         // println!("{}├── {}", prefix, name);
+        let metadata = fs::metadata(&path).unwrap();
         let e2 = match path {
             path if path.is_dir() => walk(&root.join(name), &format!("{}├  ", prefix))?,
-            path if path.is_symlink() => Entry::Symlink(
-                name.into(),
-                fs::read_link(path).unwrap().to_string_lossy().to_string(),
-            ),
-            _ => Entry::File(name.into()),
+            path if path.is_symlink() => Entry::Symlink(SymlinkEntry {
+                name: name.into(),
+                target: fs::read_link(path).unwrap().to_string_lossy().to_string(),
+                metadata: metadata,
+            }),
+            _ => Entry::File(FileEntry {
+                name: name.into(),
+                metadata: metadata,
+            }),
         };
         directory.push(e2);
     }
@@ -36,7 +60,10 @@ fn walk(root: &PathBuf, prefix: &str) -> io::Result<Entry> {
         .to_str()
         .unwrap()
         .into();
-    Ok(Entry::Directory((name, directory)))
+    Ok(Entry::Directory(DirEntry {
+        name: name,
+        entries: directory,
+    }))
 }
 
 fn main() -> io::Result<()> {
