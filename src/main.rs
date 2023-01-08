@@ -1,9 +1,11 @@
 mod filetree;
 
 use filetree::*;
+use std::env;
 use std::io;
+use std::path::PathBuf;
 
-fn print_tree(dir: Directory) {
+fn print_tree(root: &str, dir: Directory) {
     const OTHER_CHILD: &str = "│   ";
     const OTHER_ENTRY: &str = "├── ";
     const FINAL_CHILD: &str = "    ";
@@ -37,14 +39,14 @@ fn print_tree(dir: Directory) {
         (dirs, files)
     }
 
-    println!("{}", dir.name);
+    println!("{}", root);
     let (d, f) = visit(dir, "");
     println!("\n{} directories, {} files", d, f)
 }
 
 fn main() -> io::Result<()> {
-    let root = "."; // TODO: argv[1]
-    let dir: Directory = walk(&root.into(), is_not_hidden, sort_by_name)?;
-    print_tree(dir);
+    let root = env::args().nth(1).unwrap_or(".".to_string());
+    let dir: Directory = walk(&PathBuf::from(root.clone()), is_not_hidden, sort_by_name)?;
+    print_tree(&root, dir);
     Ok(())
 }
