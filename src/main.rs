@@ -1,29 +1,35 @@
 mod filetree;
 
-use std::io;
 use filetree::*;
-
+use std::io;
 
 fn print_tree(dir: Directory) {
-    fn visit(node: Directory, prefix: &str) {
+    fn visit(node: Directory, level: usize) {
+        let prefix = "│  ".repeat(level);
+        let mut count = node.entries.len();
         println!("{} {}", prefix, node.name);
         for entry in node.entries {
+            count -= 1;
+            let corner = if count == 0 { "└" } else { "├" };
             match entry {
                 FileTree::Dir(subdir) => {
-                    // println!("{}├── {}", prefix, subdir.name);
-                    visit(subdir, &format!("{}├  ", prefix))
-                },
+                    // println!("{}{}── {}", prefix, corner, subdir.name);
+                    visit(subdir, level + 1)
+                }
                 FileTree::Symlink(symlink) => {
-                    println!("{}├── {} -> {}", prefix, symlink.name, symlink.target);
-                },
+                    println!(
+                        "{}{}── {} -> {}",
+                        prefix, corner, symlink.name, symlink.target
+                    );
+                }
                 FileTree::File(file) => {
-                    println!("{}├── {}", prefix, file.name);
-                },
+                    println!("{}{}── {}", prefix, corner, file.name);
+                }
             }
         }
     }
 
-    visit(dir, "")
+    visit(dir, 0)
 }
 
 fn main() -> io::Result<()> {
