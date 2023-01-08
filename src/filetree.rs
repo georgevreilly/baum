@@ -1,3 +1,4 @@
+use std::cmp::Ordering;
 use std::ffi::OsStr;
 use std::fs;
 use std::io;
@@ -30,11 +31,22 @@ pub enum FileTree {
 }
 
 pub fn is_not_hidden(name: &str) -> bool {
-    return !name.starts_with('.')
+    return !name.starts_with('.');
 }
 
-pub fn walk(root: &PathBuf, filter: fn(name: &str)-> bool) -> io::Result<Directory> {
-    let entries: Vec<fs::DirEntry> = fs::read_dir(root)?.map(|e| e.unwrap()).collect();
+pub fn sort_by_name(a: &fs::DirEntry, b: &fs::DirEntry) -> Ordering {
+    let a_name: String = a.path().file_name().unwrap().to_str().unwrap().into();
+    let b_name: String = b.path().file_name().unwrap().to_str().unwrap().into();
+    a_name.cmp(&b_name)
+}
+
+pub fn walk(
+    root: &PathBuf,
+    filter: fn(name: &str) -> bool,
+    compare: fn(a: &fs::DirEntry, b: &fs::DirEntry) -> Ordering,
+) -> io::Result<Directory> {
+    let mut entries: Vec<fs::DirEntry> = fs::read_dir(root)?.map(|e| e.unwrap()).collect();
+    entries.sort_by(compare);
     let mut directory: Vec<FileTree> = Vec::with_capacity(entries.len());
     for e in entries {
         let path = e.path();
@@ -44,7 +56,7 @@ pub fn walk(root: &PathBuf, filter: fn(name: &str)-> bool) -> io::Result<Directo
         };
         let metadata = fs::metadata(&path).unwrap();
         let entry = match path {
-            path if path.is_dir() => FileTree::Dir(walk(&root.join(name), filter)?),
+            path if path.is_dir() => FileTree::Dir(walk(&root.join(name), filter, compare)?),
             path if path.is_symlink() => FileTree::Symlink(Symlink {
                 name: name.into(),
                 target: fs::read_link(path).unwrap().to_string_lossy().to_string(),

@@ -36,7 +36,7 @@ fn print_tree(dir: Directory) {
 
 fn main() -> io::Result<()> {
     let root = "."; // TODO: argv[1]
-    let dir: Directory = walk(&root.into(), is_not_hidden)?;
+    let dir: Directory = walk(&root.into(), is_not_hidden, sort_by_name)?;
     print_tree(dir);
     Ok(())
 }
