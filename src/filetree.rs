@@ -5,9 +5,16 @@ use std::io;
 use std::path::PathBuf;
 
 #[derive(Debug)]
+pub enum FileTreeNode {
+    Dir(Directory),
+    File(File),
+    Symlink(Symlink),
+}
+
+#[derive(Debug)]
 pub struct Directory {
     pub name: String,
-    pub entries: Vec<FileTree>,
+    pub entries: Vec<FileTreeNode>,
 }
 
 #[derive(Debug)]
@@ -21,13 +28,6 @@ pub struct Symlink {
     pub name: String,
     pub target: String,
     pub metadata: fs::Metadata,
-}
-
-#[derive(Debug)]
-pub enum FileTree {
-    Dir(Directory),
-    File(File),
-    Symlink(Symlink),
 }
 
 pub fn is_not_hidden(name: &str) -> bool {
@@ -47,7 +47,7 @@ pub fn walk(
 ) -> io::Result<Directory> {
     let mut entries: Vec<fs::DirEntry> = fs::read_dir(root)?.map(|e| e.unwrap()).collect();
     entries.sort_by(compare);
-    let mut directory: Vec<FileTree> = Vec::with_capacity(entries.len());
+    let mut directory: Vec<FileTreeNode> = Vec::with_capacity(entries.len());
     for e in entries {
         let path = e.path();
         let name: String = path.file_name().unwrap().to_str().unwrap().into();
@@ -56,13 +56,13 @@ pub fn walk(
         };
         let metadata = fs::metadata(&path).unwrap();
         let entry = match path {
-            path if path.is_dir() => FileTree::Dir(walk(&root.join(name), filter, compare)?),
-            path if path.is_symlink() => FileTree::Symlink(Symlink {
+            path if path.is_dir() => FileTreeNode::Dir(walk(&root.join(name), filter, compare)?),
+            path if path.is_symlink() => FileTreeNode::Symlink(Symlink {
                 name: name.into(),
                 target: fs::read_link(path).unwrap().to_string_lossy().to_string(),
                 metadata: metadata,
             }),
-            path if path.is_file() => FileTree::File(File {
+            path if path.is_file() => FileTreeNode::File(File {
                 name: name.into(),
                 metadata: metadata,
             }),
