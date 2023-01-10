@@ -6,7 +6,7 @@ use std::path::PathBuf;
 
 #[derive(Debug)]
 pub enum FileTreeNode {
-    Dir(Directory),
+    Directory(Directory),
     File(File),
     Symlink(Symlink),
 }
@@ -56,7 +56,7 @@ pub fn walk(
         };
         let metadata = fs::metadata(&path).unwrap();
         let entry = match path {
-            path if path.is_dir() => FileTreeNode::Dir(walk(&root.join(name), filter, compare)?),
+            path if path.is_dir() => FileTreeNode::Directory(walk(&root.join(name), filter, compare)?),
             path if path.is_symlink() => FileTreeNode::Symlink(Symlink {
                 name: name.into(),
                 target: fs::read_link(path).unwrap().to_string_lossy().to_string(),

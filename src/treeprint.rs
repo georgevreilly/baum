@@ -14,7 +14,7 @@ pub fn print_tree(root: &str, dir: Directory) {
             count -= 1;
             let line = if count == 0 { FINAL_ENTRY } else { OTHER_ENTRY };
             match entry {
-                FileTreeNode::Dir(subdir) => {
+                FileTreeNode::Directory(subdir) => {
                     println!("{}{}{}", prefix, line, subdir.name);
                     let child = if count == 0 { FINAL_CHILD } else { OTHER_CHILD };
                     let (d, f) = visit(subdir, &format!("{}{}", prefix, child));
