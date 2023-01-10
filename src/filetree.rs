@@ -40,7 +40,7 @@ pub fn sort_by_name(a: &fs::DirEntry, b: &fs::DirEntry) -> Ordering {
     a_name.cmp(&b_name)
 }
 
-pub fn walk(
+pub fn dir_walk(
     root: &PathBuf,
     filter: fn(name: &str) -> bool,
     compare: fn(a: &fs::DirEntry, b: &fs::DirEntry) -> Ordering,
@@ -56,7 +56,9 @@ pub fn walk(
         };
         let metadata = fs::metadata(&path).unwrap();
         let entry = match path {
-            path if path.is_dir() => FileTreeNode::Directory(walk(&root.join(name), filter, compare)?),
+            path if path.is_dir() => {
+                FileTreeNode::Directory(dir_walk(&root.join(name), filter, compare)?)
+            }
             path if path.is_symlink() => FileTreeNode::Symlink(Symlink {
                 name: name.into(),
                 target: fs::read_link(path).unwrap().to_string_lossy().to_string(),
