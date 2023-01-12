@@ -45,7 +45,7 @@ pub fn dir_walk(
     filter: fn(name: &str) -> bool,
     compare: fn(a: &fs::DirEntry, b: &fs::DirEntry) -> Ordering,
 ) -> io::Result<Directory> {
-    let mut entries: Vec<fs::DirEntry> = fs::read_dir(root)?.map(|e| e.unwrap()).collect();
+    let mut entries: Vec<fs::DirEntry> = fs::read_dir(root)?.filter_map(|r| r.ok()).collect();
     entries.sort_by(compare);
     let mut directory: Vec<FileTreeNode> = Vec::with_capacity(entries.len());
     for e in entries {
