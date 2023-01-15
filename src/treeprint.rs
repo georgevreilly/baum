@@ -14,18 +14,18 @@ pub fn print_tree(root: &str, dir: Directory) {
             count -= 1;
             let line = if count == 0 { FINAL_ENTRY } else { OTHER_ENTRY };
             match entry {
-                FileTreeNode::Directory(subdir) => {
+                FileTree::DirNode(subdir) => {
                     println!("{}{}{}", prefix, line, subdir.name);
                     let child = if count == 0 { FINAL_CHILD } else { OTHER_CHILD };
                     let (d, f) = visit(subdir, &format!("{}{}", prefix, child));
                     dirs += d;
                     files += f;
                 }
-                FileTreeNode::Symlink(symlink) => {
+                FileTree::LinkNode(symlink) => {
                     println!("{}{}{} -> {}", prefix, line, symlink.name, symlink.target);
                     files += 1;
                 }
-                FileTreeNode::File(file) => {
+                FileTree::FileNode(file) => {
                     println!("{}{}{}", prefix, line, file.name);
                     files += 1;
                 }

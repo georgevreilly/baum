@@ -5,16 +5,16 @@ use std::io;
 use std::path::PathBuf;
 
 #[derive(Debug)]
-pub enum FileTreeNode {
-    Directory(Directory),
-    File(File),
-    Symlink(Symlink),
+pub enum FileTree {
+    DirNode(Directory),
+    FileNode(File),
+    LinkNode(Symlink),
 }
 
 #[derive(Debug)]
 pub struct Directory {
     pub name: String,
-    pub entries: Vec<FileTreeNode>,
+    pub entries: Vec<FileTree>,
 }
 
 #[derive(Debug)]
@@ -45,9 +45,11 @@ pub fn dir_walk(
     filter: fn(name: &str) -> bool,
     compare: fn(a: &fs::DirEntry, b: &fs::DirEntry) -> Ordering,
 ) -> io::Result<Directory> {
-    let mut entries: Vec<fs::DirEntry> = fs::read_dir(root)?.filter_map(|r| r.ok()).collect();
+    let mut entries: Vec<fs::DirEntry> = fs::read_dir(root)?
+        .filter_map(|result| result.ok())
+        .collect();
     entries.sort_by(compare);
-    let mut directory: Vec<FileTreeNode> = Vec::with_capacity(entries.len());
+    let mut directory: Vec<FileTree> = Vec::with_capacity(entries.len());
     for e in entries {
         let path = e.path();
         let name: String = path.file_name().unwrap().to_str().unwrap().into();
@@ -55,22 +57,22 @@ pub fn dir_walk(
             continue;
         };
         let metadata = fs::metadata(&path).unwrap();
-        let entry = match path {
+        let node = match path {
             path if path.is_dir() => {
-                FileTreeNode::Directory(dir_walk(&root.join(name), filter, compare)?)
+                FileTree::DirNode(dir_walk(&root.join(name), filter, compare)?)
             }
-            path if path.is_symlink() => FileTreeNode::Symlink(Symlink {
+            path if path.is_symlink() => FileTree::LinkNode(Symlink {
                 name: name.into(),
                 target: fs::read_link(path).unwrap().to_string_lossy().to_string(),
                 metadata: metadata,
             }),
-            path if path.is_file() => FileTreeNode::File(File {
+            path if path.is_file() => FileTree::FileNode(File {
                 name: name.into(),
                 metadata: metadata,
             }),
             _ => unreachable!(),
         };
-        directory.push(entry);
+        directory.push(node);
     }
     let name = root
         .file_name()
